@@ -35,16 +35,16 @@ public class dataProcess {
         //        场景配置
         String sceneConf = result.substring(0, timeConsumeIndicatorsNum);
         String[] sceneConfiguration = sceneConf.split(System.lineSeparator());
-        String scene = sceneConfiguration[0].split(":")[1];
+        String scene = sceneConfiguration[0].split(": ")[1];
         m1.put("sceneConfiguration", scene);
 
 
         //        耗时指标
-        String timeConsum = result.substring(timeConsumeIndicatorsNum + 8, performanceIndicatorsNum);
+        String timeConsum = result.substring(timeConsumeIndicatorsNum + 7, performanceIndicatorsNum);
         String[] timeConsumingIndicators = timeConsum.split(System.lineSeparator());
         for (int a = 0; a < timeConsumingIndicators.length; a++) {
-            String[] tci = timeConsumingIndicators[a].replaceAll("\\n", "").split(":");
-            if (tci[0].equals("Warning"))
+            String[] tci = timeConsumingIndicators[a].replaceAll("\\n", "").split(": ");
+            if (tci[0].equals("Warning") || tci[1].equals("Not found"))
             {
                 continue;
             }
@@ -59,7 +59,7 @@ public class dataProcess {
         String perIndicators = result.substring(performanceIndicatorsNum + 7, CPUFrequencyNum);
         String[] performanceIndicators = perIndicators.split(System.lineSeparator());
         for (int b = 0; b < performanceIndicators.length; b++) {
-            String[] pi = performanceIndicators[b].replaceAll("\\n", "").split(":");
+            String[] pi = performanceIndicators[b].replaceAll("\\n", "").split(": ");
             m1.put(pi[0] + "_Max", pi[2].split(",")[0]);
             m1.put(pi[0] + "_Min", pi[3].split(",")[0]);
             m1.put(pi[0] + "_Average", pi[4].split(",")[0]);
@@ -68,8 +68,8 @@ public class dataProcess {
         //        CPU运行频率
         String cpuFre = result.substring(CPUFrequencyNum + 12);
         String[] cpuFrequency = cpuFre.split(System.lineSeparator());
-        m1.put("cpu0", cpuFrequency[0].split(":")[1]);
-        m1.put("cpu4", cpuFrequency[4].split(":")[1]);
+        m1.put("cpu0", cpuFrequency[0].split(": ")[1]);
+        m1.put("cpu4", cpuFrequency[4].split(": ")[1]);
         return m1;
     }
 
@@ -79,7 +79,7 @@ public class dataProcess {
      * @param
      * @return 返回文件内容
      */
-    public static void writerCsvContent(File files, String csvTempFile,String[] headers) throws IOException {
+    public static void writerCsvContent(File files, String csvTempFile, String[] headers) throws IOException {
         LinkedHashMap<String, String> linkedHashMap = getFileContent(files);
         File ff = new File(csvTempFile);
 
@@ -113,7 +113,7 @@ public class dataProcess {
      *
      * @param csvTempFile
      */
-    public static void csvResult(String csvTempFile,String filePath) throws IOException {
+    public static void csvResult(String csvTempFile, String srcDataFile) throws IOException {
         // 需要处理数据的文件位置
         FileReader fileReader = new FileReader(new File(csvTempFile));
         BufferedReader bufferedReader = new BufferedReader(fileReader);
@@ -132,10 +132,7 @@ public class dataProcess {
                 i++;
             }
         }
-        File ff =new File(filePath+"result\\sourceData.csv");
-        ff.delete();
-        ff.createNewFile();
-        BufferedWriter writer = new BufferedWriter(new FileWriter(ff, true));
+        BufferedWriter writer = new BufferedWriter(new FileWriter(new File(srcDataFile), true));
         CsvWriter cwriter = new CsvWriter(writer, ',');
         for (int j = 0; j < map.size(); j++) {
             String[] AA = map.get("key" + j).split(",");
@@ -152,7 +149,7 @@ public class dataProcess {
      * @param
      * @return 返回文件内容
      */
-    public static void calculateAverage(String filePath,String[] headers) throws IOException {
+    public static void calculateAverage(String filePath, String avgFile, String[] headers) throws IOException {
         List<LinkedHashMap<String, String>> list1 = new LinkedList<>();
         if (true) {
             File file = new File(filePath);
@@ -197,12 +194,9 @@ public class dataProcess {
                     sceneMap.put(entry2.getKey(), val.parallelStream().mapToDouble(Double::doubleValue).average().getAsDouble());
                 }
             }
-            File ff =new File(filePath+"result\\avg.csv");
-            ff.delete();
-            ff.createNewFile();
 
             //        新建csv文件,写入表头
-            BufferedWriter writer = new BufferedWriter(new FileWriter(filePath+"result\\avg.csv", true));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(new File(avgFile), true));
             CsvWriter cwriter = new CsvWriter(writer, ',');
 
 
@@ -240,34 +234,34 @@ public class dataProcess {
     }
 
 
-    public static void main(String[] args) throws IOException {
-        /**
-         * 主函数
-         */
-        String[] headers = {"sceneConfiguration", "cpuSystem_Max", "cpuSystem_Average", "cpu_com_iflytek_acp_Max", "cpu_com_iflytek_acp_Average",
-                "pss_com_iflytek_acp_Max", "pss_com_iflytek_acp_Average", "wait_average", "raw1_average", "raw2_average", "cb_inv_average",
-                "cb_im_average", "cb_sp_average", "generate cost_average",
-                "generate interval_average", "matrix cost_average", "matrix interval_average",
-                "Rate of audio data receiver_average", "engine audio data lost rate_average",
-                "Heat map original data lost rate_average", "cpu0", "cpu4"};
-        String filePath = "E:\\桌面\\性能测试工具\\data\\";
-
-        //   每次执行前csv清空
-        String csvTempFile = "E:\\桌面\\性能测试工具\\data\\result\\temp.csv";
-        File csv = new File(csvTempFile);
-        csv.delete();
-        csv.createNewFile();
-
-        // 处理txt文件
-        File file = new File(filePath);
-        File[] fs = file.listFiles();
-        for (File f:fs){
-            if(f.getName().endsWith(".txt")){
-                writerCsvContent(f, csvTempFile,headers);
-            }
-        }
-        csvResult(csvTempFile,filePath);
-        calculateAverage(filePath,headers);
-        System.out.println("执行完成");
-    }
+//    public static void main(String[] args) throws IOException {
+//        /**
+//         * 主函数
+//         */
+//        String[] headers = {"sceneConfiguration", "cpuSystem_Max", "cpuSystem_Average", "cpu_com_iflytek_acp_Max", "cpu_com_iflytek_acp_Average",
+//                "pss_com_iflytek_acp_Max", "pss_com_iflytek_acp_Average", "wait_average", "raw1_average", "raw2_average", "cb_inv_average",
+//                "cb_im_average", "cb_sp_average", "generate cost_average",
+//                "generate interval_average", "matrix cost_average", "matrix interval_average",
+//                "Rate of audio data receiver_average", "engine audio data lost rate_average",
+//                "Heat map original data lost rate_average", "cpu0", "cpu4"};
+//        String filePath = "E:\\桌面\\性能测试工具\\data\\";
+//
+//        //   每次执行前csv清空
+//        String csvTempFile = "E:\\桌面\\性能测试工具\\data\\result\\temp.csv";
+//        File csv = new File(csvTempFile);
+//        csv.delete();
+//        csv.createNewFile();
+//
+//        // 处理txt文件
+//        File file = new File(filePath);
+//        File[] fs = file.listFiles();
+//        for (File f:fs){
+//            if(f.getName().endsWith(".txt")){
+//                writerCsvContent(f, csvTempFile,headers);
+//            }
+//        }
+//        csvResult(csvTempFile,filePath);
+//        calculateAverage(filePath,headers);
+//        System.out.println("执行完成");
+//    }
 }
